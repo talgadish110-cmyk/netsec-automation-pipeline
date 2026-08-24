@@ -8,6 +8,14 @@ WORKDIR /app
 
 COPY scanner.py .
 
+COPY targets.txt .
 
 
-CMD ["python3", "scanner.py"]
+
+RUN pip install requests
+
+
+
+ENTRYPOINT ["python"]
+
+CMD ["scanner.py"]

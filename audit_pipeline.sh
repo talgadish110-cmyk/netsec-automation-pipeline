@@ -2,48 +2,42 @@
 
 
 
-LOG_DIR="secure_logs"
-
-mkdir -p "$LOG_DIR"
+set -e
 
 
 
-TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+echo "[*] Step 1: Preparing firewall rules (Pre-scan setup)..."
 
-LOG_FILE="$LOG_DIR/security_audit_$TIMESTAMP.log"
-
-
-
-TARGET="target-server"
-
-PORT_RANGE="1-80"
+python3 palo_control.py -f 192.168.1.254 -u admin
 
 
 
-echo "[+] Starting Automated Security Pipeline at $TIMESTAMP" | tee -a "$LOG_FILE"
+if [ $? -eq 0 ]; then
 
-
-
-SCAN_OUTPUT=$(docker run --rm netscanner-project-security-scanner port_scanner.py -t "$TARGET" -p "$PORT_RANGE")
-
-echo "$SCAN_OUTPUT" >> "$LOG_FILE"
-
-
-
-if echo "$SCAN_OUTPUT" | grep -q "OPEN"; then
-
-    echo "[!] ALERT: Open ports detected on target $TARGET!" | tee -a "$LOG_FILE"
-
-    echo "[*] Action: Security alert logged securely in $LOG_FILE"
+    echo "[+] Firewall rules applied successfully."
 
 else
 
-    echo "[-] Clean: No open ports found in the specified range." | tee -a "$LOG_FILE"
+    echo "[-] Error: Failed to configure firewall."
+
+    exit 1
 
 fi
 
 
 
-echo "[+] Pipeline execution completed. Log saved to $LOG_FILE"
+echo "[*] Step 1.5: Building Docker scanner image..."
+
+docker build -t netscanner .
 
 
+
+echo "[*] Step 2: Launching Docker network scanner container..."
+
+docker run --rm netscanner
+
+
+
+echo "[*] Step 3: Cleaning up firewall configuration (Post-scan teardown)..."
+
+echo "[+] Pipeline execution completed successfully!"
